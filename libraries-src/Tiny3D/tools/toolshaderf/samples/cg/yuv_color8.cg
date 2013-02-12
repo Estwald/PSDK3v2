@@ -1,0 +1,31 @@
+
+struct Output {
+  fixed4 color : COLOR;
+};
+
+Output main(float4 incolor : COLOR, float2 texCoord : TEXCOORD0, uniform sampler2D decal, uniform sampler2D decal2, uniform sampler2D decal3)
+{
+  Output OUT;
+  float4 yuv;
+  float4 rgba;
+  
+  yuv.x = tex2D(decal, texCoord).x;
+  yuv.y = tex2D(decal2, texCoord).x;
+  yuv.z = tex2D(decal3, texCoord).x;
+
+  yuv.x = 1.164 * (yuv.x - 0.0625); // y
+  yuv.y -= 0.5;                     // u
+  yuv.z -= 0.5;                     // v
+  yuv.w = 1.0f;
+
+  rgba.x = saturate(yuv.x + 1.596 * yuv.z);
+  rgba.y = saturate(yuv.x - 0.813 * yuv.z - 0.391 * yuv.y);
+  rgba.z = saturate(yuv.x + 2.018 * yuv.y);
+
+  rgba.w = yuv.w;
+  
+  rgba.xyz = saturate(lerp(rgba.xyz, incolor.xyz, incolor.a));
+
+  OUT.color = (fixed4) rgba;
+  return OUT;
+}

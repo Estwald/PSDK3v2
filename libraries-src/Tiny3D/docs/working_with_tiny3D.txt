@@ -1,0 +1,511 @@
+The Screen Overview
+-------------------
+
+PS3 works with differents resolutions as 480i/p, 576i/p, 720p and 1080i/p.
+
+For developers this has one problem: when you try that one application works in all resolutions offering the same look
+the only difference must be to provide better or worse detail and that requires a bit of extra work.
+
+Tiny3D work in two differents forms:
+
+- 2D Mode: In this mode virtual screen coordinates used are 840.0 x 512.0 as X/Y axis. Internally, i have adjusted the viewport
+scale to fill the entire visible screen area of my HDTV (in PS3 drawing area starts out of visible area and it needs some correction).
+Also you have a Z component. Usually, in 2D it is used to create layers priorit: near objects overwrites to far objects when
+overlaps. Here, Near is 0.0 and Far is 65535.0 in example. Z buffer used is Z24S and internally, Z viewport is scaled to 1.0/65536.0. Use
+it as reference when you works with Z component.
+
+NOTE: remember you it uses 848.0 x 512.0 and not 848 x 512: you don´t lose detail if you are using one HD resolution, but 848.0 x 512.0 is thinking
+a good compromise between 720x480, 720x576, 1280x720 and 1920x1080 as physical resolutions. We must also add that part of the physical resolution
+escapes from the edges of the screen.
+
+- 3D Mode: In this mode, virtual screen cordinates are referenced to 1.0f with the screen center in 0.0f, 0.0f for X/Y: left is < 0.0f
+right > 0.0f  down < 0.0f and up > 0.0f. Z component is used in the same way of 2D mode: 0.0 is near and 65535.0 is far. Note i cannot say where 
+are the real limit for buffer Z (the most far Z) other smallest unit of Z
+
+Using Matrix
+------------
+
+Tiny3D have two functions to specify transformation matrices for the drawing objects:
+
+    void tiny3d_SetProjectionMatrix(MATRIX *mat);
+    void tiny3d_SetMatrixModelView(MATRIX *mat);
+
+2D Mode don´t uses projection Matrix. Projection Matrix is used to create the perspective view of the object in 3D: in real life you can see 
+far objects are small respect to the near objects and it can be made fixing this matrix (MatrixProjPerspective() can be used to create it)
+
+ModelView matrix is used to transform the object: you can translate, rotate or scale the object combining matrices in only one (with MatrixMultiply)
+
+Internally, projection and ModelView matrix are combined in one that is used with objects to draw (except in 2D mode)
+
+Note if you call to tiny3d_SetProjectionMatrix(NULL) or tiny3d_SetMatrixModelView(NULL) it works loading the indentity matrix internally.
+
+The Library
+-----------
+
+Tiny3D are divided in two parts:
+
+- 3D functions for draw objects (tiny3d.h)
+
+- math functions to work with matrices (matrix.h)
+
+I have done the basic work to create one useful library your contributions are welcome :)
+
+Initializing the library
+------------------------
+
+    int tiny3d_Init(int vertex_buff_size);
+
+This function is used to initialize the library. vertex_buff_size is used to allocate the used vertex buffer to draw the objects (polygons). 
+I cannot be sure when the RSX finish to draw polygons and you can use the same  memory to alloc other object. 
+Also, you can alloc RSX memory, but you cannot dealloc it with an appropriate mechanism. So, the best idea is to alloc a vertex buffer sufficient 
+to draw all objects in one frame.
+
+The minimun value for vertex buffer is 1024*1024 (minor values are ignored).
+
+return value < 0 indicates one error
+
+
+Working with textures
+---------------------
+
+    void * tiny3d_AllocTexture(u32 size);
+
+This function is used to alloc RSX memory aligned to 16 bytes (alignment necessary for textures)
+
+As you cannot dealloc this memory, the best idea when you don´t know how much memory need you or when you must update to different textures 
+is to take a big block of memory and that the developer manage it at will.
+
+In my samples i take 64MB and i allocate smalls portions of memory aligned to 16 bytes (i use an u32 as pointer so, (x+3) & ~3) equals
+to align to 16 bytes). If you need update the texture, the best idea is to update it when RSX finish to draw objects (after tiny3d_Flip())
+
+RSX don´t work with pointers: it need to convert pointer to offset with this function:
+
+    u32 tiny3d_TextureOffset(void * text);
+
+You pass here the pointer to the RSX texture memory and it return the RSX offset.
+
+More later, you can load the texture before to draw an object with this function:
+
+    void tiny3d_SetTexture(u32 unit, u32 offset, u32 width, u32 height, u32 stride, text_format fmt, int smooth);
+
+Usually, unit = 0 (TEX0, use 1 for TEX1, etc)), offset = RSX texture offset, width and height don´t need explanation, stride can be width*4 
+if you are using 32 bit color, fmt can be TINY3D_TEX_FORMAT_A8R8G8B8 for 32 bits color ans smooth 1 or 0.
+
+Also you have this function to Wrap the texture:
+
+    #define TEXTWRAP_REPEAT 0
+    #define TEXTWRAP_CLAMP  1
+    #define TEXTWRAP_MIRROR 2
+
+    // set texture to draw with wrap options
+
+    void tiny3d_SetTextureWrap(u32 unit, u32 offset, u32 width, u32 height, u32 stride, text_format fmt, int wrap_u, int wrap_v, int smooth);
+
+Use defines in wrap_u and wrap_v.
+
+TEXTWRAP_REPEAT -> texture coordinates 0.0 - 1.0 -2.0, 3.0 .... (tiny3d_SetTexture() use this method)
+TEXTWRAP_CLAMP  -> texture coordinates 0.0 - 1.0
+TEXTWRAP_MIRROR -> texture coordinates -1.0 - 0.0 - 1.0
+
+
+Initializing a frame
+--------------------
+
+The frame starts with one call to:
+
+    tiny3d_Clear(color, TINY3D_CLEAR_ALL);
+
+
+color is a u32 with the color to clear the background (i.e: 0xff000000 for solid (alpha) black)
+
+Internally, tiny3d_Clear() change to 2D mode, fix projection and ModelView matrix with identity matrix, disables alpha test and blend and clear
+the buffers.
+
+After you can call to:
+
+  // Enable alpha Test
+  tiny3d_AlphaTest(1, 0x10, TINY3D_ALPHA_FUNC_GEQUAL);
+
+  // Enable alpha blending.
+  tiny3d_BlendFunc(1, TINY3D_BLEND_FUNC_SRC_RGB_SRC_ALPHA | TINY3D_BLEND_FUNC_SRC_ALPHA_SRC_ALPHA,
+     NV30_3D_BLEND_FUNC_DST_RGB_ONE_MINUS_SRC_ALPHA | NV30_3D_BLEND_FUNC_DST_ALPHA_ZERO,
+     TINY3D_BLEND_RGB_FUNC_ADD | TINY3D_BLEND_ALPHA_FUNC_ADD);
+
+
+Alpha test when a pixel of the object can be writed depending of the Alpha value. In this case one value for alpha minor of 0x10 
+(here the reference is 0x00 to 0xff) causes the pixel are not writed (and Z buffer is not updated)
+
+Blending is used to control as operate alpha in translucent object to combine it with the screen. A solid object will have an alpha 1.0 or 0xff
+depending if you are using floats or u32 with colors and one transparent object 0.0 or 0
+
+Here you can see the importance of the alpha test: with you use blend you cannot see one tranparent object, but it update Z buffer. With alpha 
+test you can avoid it and you can write afeter other object in the background without interferences.
+
+Now you need to select the 2D or 3D modes to work (remember you when tiny3d_Clear() is called it changes to 2D mode)
+
+    void tiny3d_Project2D(); // change to 3D mode (screen 840.0 x 512.0)
+
+    void tiny3d_Project3D(); // change to 3D mode
+
+Well, now you are prepared to write objects in the screen.
+
+Drawing polygons
+----------------
+
+We can start real work.
+
+Before to draw polygons yo must be sure projection, and modelview matrix are updated (maybe it is matrix identity currenctñy and you need to change it)
+and you are loading one texture if the polygon uses one
+
+To start to draw a polygon, you must call to:
+
+    int tiny3d_SetPolygon(type_polygon type);
+
+Use the param type to select the polygon to draw from TINY3D_POINTS to TINY3D_POLYGON (see tiny3d.h)
+
+tiny3d_SetPolygon() can be return one condition error:
+
+TINY3D_BUSY occurs when you forget to call tiny3d_End() in other vertex list.
+
+TINY3D_INVALID when you uses an invalid type.
+
+Now, you must send the vertex element. Here it is necessary to send the sufficient vertex for one polygon: QUADS requires 4 vertex, TRIANGLES 3 vertex,
+etc. Other types as TRIANGLES_STRIPS requiere a minimun of 3 vertex and you can add 1 vertex to write a new triangle (it uses 2 old vertex and one new
+to write news triangles)
+
+In spheres3D i use QUADS_STRIPS to create one: i only need to create two vertex by section because QUAD_STRIP requires 4 vertex for the first quads and 
+waits 2 news vertex to create other quads. So i can create one ring of walls to create one sphere.
+
+Vertex attributes decide the shaders to be used. Here you have 3 differents shaders for color, textures and color modulating textures. So depending 
+of the vertex attributes the context for shaders is changed in automatic form.
+
+The first element must be tiny3d_VertexPos() or tiny3d_VertexPos4(). Internally vertex attributes are stored in a temporary structure and when you
+call to the next tiny3d_VertexPos() or tiny3d_End(), it is writed to the vertex buffer used. The others vertex function can be called in the order as 
+you want, but before, always tiny3d_VertexPos() or tiny3d_VertexPos4().
+
+The vertex functions are:
+
+
+    // position: it must be the first vertex function to call
+    void tiny3d_VertexPos(float x, float y, float z);            // here w is initialized to 1.0f internally
+    void tiny3d_VertexPos4(float x, float y, float z, float w);
+    void tiny3d_VertexPosVector(VECTOR v);
+
+    //color: fix color method
+    void tiny3d_VertexColor(u32 rgba); // ((r<<24) | (g<<16) | (b<<8) | a) range: 0 - 0xff
+    void tiny3d_VertexFcolor(float r, float g, float b, float a);  // range 0.0f to 1.0f
+
+    // texture: texture coords (TEX0)
+    void tiny3d_VertexTexture(float u, float v); // range (0.0f to 1.0f is the base, but depend of the wrap option)
+
+    // texture2: textures2 coords (TEX1)
+    void tiny3d_VertexTexture2(float u, float v); // range (0.0f to 1.0f is the base, but depend of the wrap option)
+
+
+    // normal: normal coords 
+    void tiny3d_Normal(float x, float y, float z);
+    void tiny3d_NormalVector(VECTOR v);
+
+
+VertexColor() and VertexFcolor() functions are exclusives. It is because the vertex size are different. VertexFcolor() have preference.
+Nomals excludes Color attributes because it use Materials
+
+Note that it is possible to send one color for the first vertex and not specify that attribute in the following vertex because the first active the
+internal flag of this attribute and the values are stored and retained in the internal structure used to send the vertex attributes.
+
+When you finish to compose the vertex list you must call to:
+
+    int tiny3d_End();
+
+This function flush the last vertex, load the matrix and shaders if it is necessary and draw the polygon. It also test the list integrity
+depending of the polygon to draw. It is very important you don´t forget to call this function!!
+
+After of this function is called, you can change the Projection and ModelView Matrix with tiny3d_SetProjectionMatrix() and tiny3d_SetMatrixModelView(),
+load other texture tiny3d_SetTexture(), and call again to tiny3d_SetPolygon() to create a new list.
+
+Note that except when you call to tiny3d_Clear(), matrix and textures should not be updated if you cannot find it necessary (when you update one
+matrix, internally projection and modelview must be combined and it requires time of process)
+
+Finish the frame
+----------------
+
+You must call to:
+
+    void tiny3d_Flip();
+
+to finish the frame: it flip the screen, wait to is occurs and initize some internals variables
+
+Now you can update texture datas if you want.
+
+Working with Polygons and attributes
+------------------------------------
+
+QUADS - one quad is a polygon that use 4 vertex that is ordered usually, clockwise:
+
+a----b 
+|    |
+|    |
+d----c
+
+position attribute depends if you are using 2D/3D modes (see "The Screen Overview")
+
+When you use color attribute in u32 format, you are using rgba with 8 bits per component (range: 0 - 0xff) and it is computed so:
+    ((r<<24) | (g<<16) | (b<<8) | a)
+
+If you uses color as float, component color have a range of 0.0f to 1.0f for intensity
+
+Whe you uses textures, U represent 'X' and V represent 'Y' in you mind XD.
+
+for U, 0.0f is 'left' and 0.99f is 'right'. For V, 0.0f is 'up' and 0.99f is 'down', Note if you use 1.0f may be it draw one strange artifact to
+the right or down.
+
+0----1U
+|    |
+|    |
+1----1UV
+V
+
+if you want to write one full screen backgroud polygon in 2D with one color you can use:
+
+    tiny3d_Project2D();
+    .....
+
+    tiny3d_SetPolygon(TINY3D_QUADS);
+
+    tiny3d_VertexPos(0  , 0  , 65535);
+    tiny3d_VertexColor(rgba);
+
+    tiny3d_VertexPos(847, 0  , 65535);
+
+    tiny3d_VertexPos(847, 511, 65535);
+
+    tiny3d_VertexPos(0  , 511, 65535);
+    tiny3d_End();
+
+ 847 and 511 is referer to the virtual screen coordinates used in 2D (848.0 and 512.0).
+
+ the same using one texture:
+
+    tiny3d_Project2D();
+    .....
+    tiny3d_SetTexture(0, texture_offset, texture_width, texture_height, texture_width * 4, TINY3D_TEX_FORMAT_A8R8G8B8, 1);
+
+    tiny3d_SetPolygon(TINY3D_QUADS);
+
+    tiny3d_VertexPos(0  , 0  , 65535);
+    tiny3d_VertexColor(rgba);
+    tiny3d_VertexTexture(0.0f, 0.0f);
+
+    tiny3d_VertexPos(847, 0  , 65535);
+    tiny3d_VertexTexture(0.99f, 0.0f);
+
+    tiny3d_VertexPos(847, 511, 65535);
+    tiny3d_VertexTexture(0.99f, 0.99f);
+
+    tiny3d_VertexPos(0  , 511, 65535);
+    tiny3d_VertexTexture(0.0f, 0.99f);
+    tiny3d_End();
+
+  Usually, Z = 0.0f is the front of the screen but it can be possible to send negatives values: in 2D it is not a big problem, 
+  but if you are using one projection matrix in 3D, it can be a problem.
+
+  Also you must try don´t write polygons out of the screen because it have a limit to clip X/Y and it is problematic when you
+  uses low values of Z.
+
+Using triangle strips:
+
+a----b----e 
+|  / |  /
+| /  | /
+c----d
+
+As you can see to produce 3 triangles, you only needs to send 5 vertex. I you don´t know how strip modes operates here you have one 'graphic'
+example to understand it.
+
+PS3 have the ability to draw polygons. With TINY3D_POLYGON you can for example, with 5 vertex using the clockwise rule, draw a pentagon.
+
+##############################################################################################################################################
+#                                                            ADVANCED USES                                                                   #
+##############################################################################################################################################
+
+Lights and Materials
+====================
+
+When you uses normals attributes, Vertex Shaders changes the work mode to use lights (ambient + 4 positional diffuse/specular lights)
+
+Materials defines the behavior of the light when impact the object:
+
+    // EmissiveMaterial:
+    // r,g,b: color components (0.0f to 1.0f)
+    // a: Unused
+
+    void tiny3d_EmissiveMaterial(float r, float g, float b, float a); // emissive light from the object
+
+    // AmbientMaterial:
+    // r,g,b: color components (0.0f to 1.0f)
+    // a: Alpha component. Translucency control (0.0f to 1.0f)
+
+    void tiny3d_AmbientMaterial (float r, float g, float b, float a); // ambiental light (minimun light level)
+
+    // DiffuseMaterial:
+    // r,g,b: color components (0.0f to 1.0f)
+    // a: 0.0 -> disable, other value -> enable
+
+    void tiny3d_DiffuseMaterial (float r, float g, float b, float a); // diffuse light (light absortion)
+
+    // SpecularMaterial:
+    // r,g,b: color components (0.0f to 1.0f)
+    // shininess: 0.0 -> disable specular, other value -> shininess 
+
+    void tiny3d_SpecularMaterial(float r, float g, float b, float shininess); // specular light (light reflection)
+
+Lights functions
+----------------
+
+    // ambiental light multiplier
+
+    void tiny3d_SetAmbientLight(float r, float g, float b); // multiply the ambiental material light
+
+    // camera position reference for position lights
+
+    void tiny3d_SetLightCameraPosition(float x, float y, float z); // lights are positional: you can use this to create an angle reference to the camera
+
+    // set positional light
+    // indx: 0 to 3 (4 lights supported)
+    // x,y,z: space position
+    // r,g,b: color components (0.0f to 1.0f)
+    // mode: 1 -> light diffuse, 2 -> light specular, 0-> light disable
+
+    // modes
+    #define LIGHT_DISABLED 0 
+    #define LIGHT_DIFFUSE  1
+    #define LIGHT_SPECULAR 2
+
+    void tiny3d_SetLight(int indx, float x, float y, float z, float r, float g, float b, int mode);
+
+    // disable all lights
+
+    void tiny3d_SetLightsOff();
+
+LIST
+====
+
+List can records static and  dinamyc matrix (extern matrix), materials atributes, changes of textures, vertex attributes and polygons.
+
+You can concatenate list using the function tiny3d_DrawList() into the current recorded list.
+
+
+            // start recording list of polygon, vertex, textures, material, matrix propierties
+
+    int tiny3d_RecordList(); // first function to call to  start the record
+
+            // use this instead tiny3d_SetMatrixModelView() to set one external-dynamic matrix
+
+    void tiny3d_DynamicMatrixList(MATRIX *mat); // put one matrix to control the object externally
+
+            // use this instead tiny3d_SetMatrixModelView() to apply the matrix changes directly
+
+    void tiny3d_ApplyMatrixList(MATRIX *mat); // apply directly the matrix to the vertex position and normals
+
+            // Record list stop and return the head of the list command
+
+    void * tiny3d_StopList();  // last function to call (return the recorded list)
+
+            // draw list. Also can link the list with the recording current list (hierarchy lists)
+
+    void tiny3d_DrawList(void * headlist); // draw the list. You can concatenate this function in others list recording
+
+            // free list (is not recursive)
+
+    void tiny3d_FreeList(void * headlist); // to free the current list. If you have concatenate list call to this function individually for the list
+
+
+Functions to use into one recording list
+----------------------------------------
+
+    void tiny3d_SetMatrixModelView(MATRIX *mat); // effect : put one static matrix (when you call to DrawList this matrix is the first to multiply)
+
+    void tiny3d_ApplyMatrixList(MATRIX *mat); // apply directly the matrix to the vertex position and normals to create the object
+
+    void tiny3d_DynamicMatrixList(MATRIX *mat); // put one matrix to control the object externally (if you modify the matrix, the object changes)
+
+    int tiny3d_SetPolygon(type_polygon type); 
+    int tiny3d_End();
+
+    void tiny3d_VertexPos(float x, float y, float z);
+    void tiny3d_VertexPos4(float x, float y, float z, float w);
+    void tiny3d_VertexPosVector(VECTOR v);
+
+    void tiny3d_VertexColor(u32 rgba);
+    void tiny3d_VertexFcolor(float r, float g, float b, float a);
+
+    void tiny3d_VertexTexture(float u, float v);
+    void tiny3d_VertexTexture2(float u, float v);
+     
+    void tiny3d_Normal(float x, float y, float z);
+    void tiny3d_NormalVector(VECTOR v);
+
+    void tiny3d_EmissiveMaterial(float r, float g, float b, float a);
+
+    void tiny3d_AmbientMaterial (float r, float g, float b, float a);
+
+    void tiny3d_DiffuseMaterial (float r, float g, float b, float a);
+
+    void tiny3d_SpecularMaterial(float r, float g, float b, float shininess);
+
+    void tiny3d_SelMultiTexturesMethod(u32 method);
+    void tiny3d_SetTexture(u32 unit, u32 offset, u32 width, u32 height, u32 stride, text_format fmt, int smooth);
+    void tiny3d_SetTextureWrap(u32 unit, u32 offset, u32 width, u32 height, u32 stride, text_format fmt, int wrap_u, int wrap_v, int smooth);
+
+List Examples
+-------------
+
+// building material list
+
+    void *material_white_plastic = NULL;
+    
+    tiny3d_RecordList();
+
+    tiny3d_EmissiveMaterial(0.0f,  0.0f,  0.0, 0.0f);
+    tiny3d_AmbientMaterial(0.33f, 0.33f, 0.33f, 1.0f);
+    tiny3d_DiffuseMaterial(0.58f, 0.58, 0.58, 1.0f);
+    tiny3d_SpecularMaterial(0.99f, 0.99f, 0.99f, 128.8f);
+
+    material_white_plastic = tiny3d_StopList();
+
+    ..........................................
+
+    tiny3d_DrawList(material_white_plastic);
+
+// concatenate list
+
+    MATRIX tmp;
+
+    tiny3d_RecordList();
+
+    tiny3d_DrawList(material_white_plastic); // -> call to the first list
+
+    CreateSphereNormal(8.0, 8.0, 32, 32);
+
+    tmp = MatrixTranslation(0.0, -12.0, 0.0);
+
+    tiny3d_ApplyMatrixList(&tmp);
+
+    CreateCilinderNormal(4.0, 8.0, 32, 32);
+
+    list_object1 = tiny3d_StopList();
+
+    assert(list_object1);
+
+YUV
+===
+
+
+(building)
+
+
+i hope this little instructions aids to you to understand as Tiny3D works.
+
+Remember you i am spanish and uses google to help in this translation: if it is not good translation, sorry :S
+
+greets

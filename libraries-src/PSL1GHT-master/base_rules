@@ -1,0 +1,100 @@
+ifeq ($(strip $(PS3DEV)),)
+  ifeq ($(strip $(DEVKITPS3)),)
+    export PS3DEV := /usr/local/ps3dev
+  else
+    export PS3DEV := $(DEVKITPS3)
+  endif
+endif
+
+# Allow for 'make VERBOSE=1' to see the recepie executions
+ifndef VERBOSE
+  VERB := @
+endif
+
+#dont' auto-delete elf & self files
+.PRECIOUS: %.elf %.self
+
+#---------------------------------------------------------------------------------
+# the prefix on the compiler executables
+#---------------------------------------------------------------------------------
+export AS		:=	$(PREFIX)as
+export CC		:=	$(PREFIX)gcc
+export CXX		:=	$(PREFIX)g++
+export AR		:=	$(PREFIX)ar
+export LD		?=	$(PREFIX)gcc
+export STRIP	:=	$(PREFIX)strip
+export OBJCOPY	:=	$(PREFIX)objcopy
+
+export RAW2H    :=  raw2h$(POSTFIX)
+
+#use dependencies when user has defined a place to put them into
+ifneq (,$(DEPSDIR))
+	DEPSOPT		=	-MMD -MP -MF $(DEPSDIR)/$*.d
+endif
+
+UNAME			:=	$(shell uname -s)
+
+ISVC=$(or $(VCBUILDHELPER_COMMAND),$(MSBUILDEXTENSIONSPATH32),$(MSBUILDEXTENSIONSPATH))
+
+ifneq (,$(ISVC))
+	ERROR_FILTER	:=	2>&1 | sed -e 's/\(.[a-zA-Z]\+\):\([0-9]\+\):/\1(\2):/g'
+endif
+
+ifneq (,$(findstring MINGW,$(UNAME)))
+	POSTFIX		:=	.exe
+endif
+
+ifneq (,$(findstring CYGWIN,$(UNAME)))
+	POSTFIX		:=	.exe
+endif
+
+#---------------------------------------------------------------------------------
+%.a:
+#---------------------------------------------------------------------------------
+	$(VERB) echo $(notdir $@)
+	$(VERB) rm -f $@
+	$(VERB) $(AR) -rc $@ $^
+
+#---------------------------------------------------------------------------------
+%.elf: $(OFILES)
+	$(VERB) echo linking ... $(notdir $@)
+	$(VERB) $(LD)  $^ $(LDFLAGS) $(LIBPATHS) $(LIBS) -o $@
+
+#---------------------------------------------------------------------------------
+%.o: %.cpp
+	$(VERB) echo $(notdir $<)
+	$(VERB) $(CXX) $(DEPSOPT) $(CXXFLAGS) -c $< -o $@ $(ERROR_FILTER)
+
+#---------------------------------------------------------------------------------
+%.o: %.c
+	$(VERB) echo $(notdir $<)
+	$(VERB) $(CC) $(DEPSOPT) $(CFLAGS) -c $< -o $@ $(ERROR_FILTER)
+
+#---------------------------------------------------------------------------------
+%.o: %.m
+	$(VERB) echo $(notdir $<)
+	$(VERB) $(CC) $(DEPSOPT) $(OBJCFLAGS) -c $< -o $@ $(ERROR_FILTER)
+
+#---------------------------------------------------------------------------------
+%.o: %.s
+	$(VERB) echo $(notdir $<)
+	$(VERB) $(CC) $(DEPSOPT) -x assembler-with-cpp $(ASFLAGS) -c $< -o $@ $(ERROR_FILTER)
+
+#---------------------------------------------------------------------------------
+%.o: %.S
+	$(VERB) echo $(notdir $<)
+	$(VERB) $(CC) $(DEPSOPT) -x assembler-with-cpp $(ASFLAGS) -c $< -o $@ $(ERROR_FILTER)
+
+#---------------------------------------------------------------------------------
+# canned command sequence for binary data
+#---------------------------------------------------------------------------------
+
+define bin2o
+	$(VERB) bin2s -a 64 $< | $(AS) -o $(@)
+	$(VERB) echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(<F) | tr . _)`.h
+	$(VERB) echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(<F) | tr . _)`.h
+	$(VERB) echo "extern const u32" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(<F) | tr . _)`.h
+endef
+
+
+

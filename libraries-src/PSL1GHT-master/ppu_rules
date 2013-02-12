@@ -1,0 +1,84 @@
+ifeq ($(strip $(PS3DEV)),)
+  ifeq ($(strip $(DEVKITPS3)),)
+    export PS3DEV := /usr/local/ps3dev
+  else
+    export PS3DEV := $(DEVKITPS3)
+  endif
+endif
+
+export PATH		:=	$(PS3DEV)/bin:$(PS3DEV)/ppu/bin:$(PATH)
+
+export PORTLIBS		:=	$(PS3DEV)/portlibs/ppu
+
+export LIBPSL1GHT_INC	:=	-I$(PSL1GHT)/ppu/include -I$(PSL1GHT)/ppu/include/simdmath
+export LIBPSL1GHT_LIB	:=	-L$(PSL1GHT)/ppu/lib
+
+PREFIX			:=	ppu-
+
+MACHDEP			=	-mhard-float -fmodulo-sched -ffunction-sections -fdata-sections
+
+include $(PSL1GHT)/base_rules
+include $(PSL1GHT)/data_rules
+
+PKG			:=	pkg.py
+SFO			:=	sfo.py
+
+SPRX			:=	sprxlinker$(POSTFIX)
+CGCOMP			:=	cgcomp$(POSTFIX)
+PS3LOADAPP		:=	ps3load$(POSTFIX)
+
+# fake SELF type4 / type8 tools
+FSELF			:=	fself.py
+FSELF_NPDRM		:=	$(FSELF) -n
+
+# signed SELF type4 / type8 tools
+SCETOOL_FLAGS	?=	--self-app-version=0001000000000000  --sce-type=SELF --compress-data=TRUE --self-add-shdrs=TRUE --skip-sections=FALSE --key-revision=1 \
+					--self-auth-id=1010000001000003 --self-vendor-id=01000002 --self-fw-version=0003004000000000
+
+SELF			:=	fake_scetool$(POSTFIX) --self-type=APP
+#make_self
+SELF_NPDRM		:=	fake_scetool$(POSTFIX) --self-type=NPDRM --np-license-type=FREE --np-app-type=EXEC --np-real-fname=EBOOT.BIN
+#make_self_npdrm
+
+# NPDRM pkg tool
+PACKAGE_FINALIZE	:=	package_finalize
+
+# Package settings - allow for user override
+TITLE			?=	Untitled PSL1GHT homebrew
+APPID			?=	UNTITLED1
+SFOXML			?=	$(PS3DEV)/bin/sfo.xml
+ICON0			?=	$(PS3DEV)/bin/ICON0.PNG
+CONTENTID		?=	UP0001-$(APPID)_00-0000000000000000
+TARGET			?=	$(notdir $(CURDIR))
+BUILDDIR		?=	$(CURDIR)/build
+
+
+#---------------------------------------------------------------------------------
+%.self: %.elf
+	$(VERB) echo CEX self ... $(notdir $@)
+	$(VERB) mkdir -p $(BUILDDIR)
+	$(VERB) $(STRIP) $< -o $(BUILDDIR)/$(notdir $<)
+	$(VERB) $(SPRX) $(BUILDDIR)/$(notdir $<)
+	$(VERB) $(SELF) $(SCETOOL_FLAGS) --encrypt $(BUILDDIR)/$(notdir $<) $@
+	$(VERB) #$(FSELF) $(BUILDDIR)/$(notdir $<) $(basename $@).fake.self
+
+%.pkg: %.self
+	$(VERB) echo building pkg ... $(notdir $@)
+	$(VERB) mkdir -p $(BUILDDIR)/pkg/USRDIR
+	$(VERB) cp $(ICON0) $(BUILDDIR)/pkg/ICON0.PNG
+	$(VERB) $(SELF_NPDRM) $(SCETOOL_FLAGS) --np-content-id=$(CONTENTID) --encrypt $(BUILDDIR)/$(basename $(notdir $<)).elf $(BUILDDIR)/pkg/USRDIR/EBOOT.BIN #$(CONTENTID) >> /dev/null
+	$(VERB) $(SFO) --title "$(TITLE)" --appid "$(APPID)" -f $(SFOXML) $(BUILDDIR)/pkg/PARAM.SFO
+	$(VERB) if [ -n "$(PKGFILES)" -a -d "$(PKGFILES)" ]; then cp -rf $(PKGFILES)/* $(BUILDDIR)/pkg/; fi
+	$(VERB) $(PKG) --contentid $(CONTENTID) $(BUILDDIR)/pkg/ $@ >> /dev/null
+	$(VERB) #cp $@ $(basename $@).gnpdrm.pkg
+	$(VERB) #$(PACKAGE_FINALIZE) $(basename $@).gnpdrm.pkg
+
+#---------------------------------------------------------------------------------
+%.vpo: %.vcg
+	$(VERB) echo $(notdir $<)
+	$(VERB) $(CGCOMP) -v $^ $@
+
+%.fpo: %.fcg
+	$(VERB) echo $(notdir $<)
+	$(VERB) $(CGCOMP) -f $^ $@
+

@@ -1,0 +1,43 @@
+PSL1GHT V1 TO V2 CHANGES
+
+1) Improved Directory Layout
+
+	common
+		libsimdmath
+		vectormath
+	ppu
+		crt
+		include
+		librsx
+		librt
+		sprx
+	samples
+		audio
+		graphics
+		input
+		network
+		spu
+		sys
+		video
+	spu
+		include
+		libsputhread
+	tools
+
+2) New Libraries
+
+	ppu/librsx
+	ppu/librt
+
+	spu/libsputhread
+
+3) New Samples
+
+	graphics/rsxtest
+	graphics/rsxtest_spu
+
+STUFF LEFT TO DO
+
+1) Finish porting samples to V2.
+2) Create a new template.
+3) …?

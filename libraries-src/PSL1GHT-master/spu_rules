@@ -1,0 +1,22 @@
+ifeq ($(strip $(PS3DEV)),)
+  ifeq ($(strip $(DEVKITPS3)),)
+    export PS3DEV := /usr/local/ps3dev
+  else
+    export PS3DEV := $(DEVKITPS3)
+  endif
+endif
+
+export PATH	:=	$(PS3DEV)/bin:$(PS3DEV)/spu/bin:$(PATH)
+
+export PORTLIBS	:=	$(PS3DEV)/portlibs/spu
+
+export LIBPSL1GHT_INC	:=	-I$(PSL1GHT)/spu/include -I$(PSL1GHT)/spu/include/simdmath
+export LIBPSL1GHT_LIB	:=	-L$(PSL1GHT)/spu/lib
+
+PREFIX	:=	spu-
+
+MACHDEP =
+
+include $(PSL1GHT)/base_rules
+
+#---------------------------------------------------------------------------------

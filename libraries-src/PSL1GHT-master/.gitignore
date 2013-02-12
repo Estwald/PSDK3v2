@@ -1,0 +1,8 @@
+*.exe
+*.elf
+*.self
+*.pkg
+*.o
+*.a
+*.d
+build/

@@ -1,0 +1,16 @@
+#---------------------------------------------------------------------------------
+# Clear the implicit built in rules
+#---------------------------------------------------------------------------------
+.SUFFIXES:
+#---------------------------------------------------------------------------------
+
+all:
+
+install:
+	@[ -d $(PSL1GHT)/spu/include/vectormath ] || mkdir -p $(PSL1GHT)/spu/include/vectormath
+	@cp -frv $(CURDIR)/c $(PSL1GHT)/spu/include/vectormath
+	@cp -frv $(CURDIR)/cpp $(PSL1GHT)/spu/include/vectormath
+
+clean:
+
+.PHONY: all clean install

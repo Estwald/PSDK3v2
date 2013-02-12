@@ -1,0 +1,26 @@
+
+struct Output {
+  fixed4 color : COLOR;
+};
+
+Output main(float2 texCoord : TEXCOORD0, uniform sampler2D decal)
+{
+  Output OUT;
+  float4 yuv;
+  fixed4 rgba;
+  
+  yuv = tex2D(decal, texCoord);
+  
+  yuv.x = 1.164 * (yuv.x - 0.0625); // y
+  yuv.y -= 0.5;                     // u
+  yuv.z -= 0.5;                     // v
+  
+  rgba.x = saturate(yuv.x + 1.596 * yuv.z);
+  rgba.y = saturate(yuv.x - 0.813 * yuv.z - 0.391 * yuv.y);
+  rgba.z = saturate(yuv.x + 2.018 * yuv.y);
+
+  rgba.w = yuv.w;
+
+  OUT.color = rgba;
+  return OUT;
+}

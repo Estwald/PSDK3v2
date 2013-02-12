@@ -1,0 +1,5 @@
+This is the modified version of PSL1GHT vpcomp tool from ElSemi.
+
+This version works with VP30 instead VP40 (to use it with 'pow' function used in Tiny3D vertex shader)
+
+Also it can works with ASM files becuase i have modified some fread() functions to work properly
