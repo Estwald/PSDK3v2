@@ -3,8 +3,8 @@ PSDK3 v2
 
 Basado en el trabajo de Estwald, Marioga y otros sceners y en librerías como PSL1GHT, Tiny3D y PS3 Soundlib, PSDK3 pretende ser un entorno
 estable de programación de homebrew en PS3 bajo Windows, sin influencias externas que amenacen la integridad de las librerías, ni de las 
-aplicaciones que se construyen con ellas, cuando alguien decide cambiarlo rompiendo la compatibilidad con las aplicaciones creadas con esas
-librerías y provocando un claro perjuicio. Aquí el lema es "si algo funciona, no lo toques" y se pueden añadir cosas, pero no
+aplicaciones que se construyen con ellas, cuando alguien decide cambiarlo todo, rompiendo la compatibilidad con las aplicaciones creadas 
+con esas librerías y provocando un claro perjuicio. Aquí el lema es "si algo funciona, no lo toques" y se pueden añadir cosas, pero no
 restar, ni toquetear pijoteramente el código.
 
 Que hacer:
