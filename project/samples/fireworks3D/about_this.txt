@@ -1,0 +1,24 @@
+'fireworks3D' is a sound sample playing MP3 or OGG in the background and playing 8 voices from fireworks explosion.
+
+It also can play OGG/MP3 from one pendrive if you copy the OGG/MP3 files in the audio folder (it is played from /dev_usb/audio)
+
+NOTE: It uses Tiny3D to draw in the screen
+
+Controls:
+
+- Press CROSS to exit (this function is delayed some second from the sample starts)
+
+- Press CIRCLE to play one voice effect as you want
+
+- Press TRIANGLE to play one OGG/MP3 from /dev_usb/audio. If it fails, it play the internal MP3
+
+- Press SQUARE to pause the fireworks voices (OGG/MP3 is played with half volume and the rest of voices are mixed with it)
+
+- Press PS to exit.
+
+'fireworks3D' decode ogg and mp3 from memory to memory to play audio effects. Voice 0 is used by audio player. Voices 8 to F is used by explosions.
+Voice 5 is used when you press CIRCLE.
+
+The voice map is displayed in the screen and OGG/MP3 time too (and filename w hen you play from USB)
+
+- Hermes -
