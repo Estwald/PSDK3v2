@@ -147,6 +147,7 @@ s32 httpRequestGetHeader(httpTransId tid,httpHeader *header,const char *name,voi
 s32 httpRequestAddHeader(httpTransId tid,const httpHeader *header);
 s32 httpRequestDeleteHeader(httpTransId tid,const char *name);
 
+s32 httpResponseGetContentLength(httpTransId tid, u64 *totalSize);
 /* response status code */
 s32 httpResponseGetStatusCode(httpTransId tid,int32_t *code);
 
