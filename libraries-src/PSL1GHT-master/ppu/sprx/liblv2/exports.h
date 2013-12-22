@@ -21,6 +21,7 @@ EXPORT(sysProcessExitSpawn2Ex, 0x67f9fedb);
 EXPORT(sysProcessExitSpawnWithLevel, 0xa2c7ba64); /* sysPrxForUser */
 EXPORT(sysProcessAtExitSpawn, 0x2c847572); /* sysPrxForUser */
 EXPORT(sysProcess_At_ExitSpawn, 0x96328741); /* sysPrxForUser */
+EXPORT(_sys_process_atexitspawn, 0x9D2EC4FF); /* sysPrxForUser */
 
 /* prx handling */
 EXPORT(sysPrxRegisterLibrary, 0x42b23552); /* sysPrxForUser */

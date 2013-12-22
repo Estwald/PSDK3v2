@@ -4,6 +4,8 @@
 
 #include <ppu-types.h>
 
+#undef size32_t
+#define size32_t s32
 
 #ifdef __cplusplus
 extern "C" {
@@ -73,32 +75,32 @@ typedef struct _http_header
  */
 
 /* build */
-s32 httpUtilBuildRequestLine(const httpRequestLine *req,char *buf,size_t len,size_t *required);
-s32 httpUtilBuildHeader(const httpHeader *header,char *buf,size_t len,size_t *required);
-s32 httpUtilBuildUri(const httpUri *uri,char *buf,size_t len,size_t *required,int32_t flags);
-s32 httpUtilSweepPath(char *dst,const char *src,size_t srcSize);
+s32 httpUtilBuildRequestLine(const httpRequestLine *req,char *buf,size32_t len,size32_t *required);
+s32 httpUtilBuildHeader(const httpHeader *header,char *buf,size32_t len,size32_t *required);
+s32 httpUtilBuildUri(const httpUri *uri,char *buf,size32_t len,size32_t *required,int32_t flags);
+s32 httpUtilSweepPath(char *dst,const char *src,size32_t srcSize);
 
 /* encode */
-s32 httpUtilEscapeUri(char *out,size_t outSize,const unsigned char *in,size_t inSize,size_t *required);
-s32 httpUtilUnescapeUri(unsigned char *out,size_t size,const char *in,size_t *required);
-s32 httpUtilFormUrlEncode(char *out,size_t outSize,const unsigned char *in,size_t inSize,size_t *required);
-s32 httpUtilFormUrlDecode(unsigned char *out,size_t size,const char *in,size_t *required);
-s32 httpUtilBase64Encoder(char *out,const void *in,size_t len);
-s32 httpUtilBase64Decoder(char *out,const void *in,size_t len);
+s32 httpUtilEscapeUri(char *out,size32_t outSize,const unsigned char *in,size32_t inSize,size32_t *required);
+s32 httpUtilUnescapeUri(unsigned char *out,size32_t size,const char *in,size32_t *required);
+s32 httpUtilFormUrlEncode(char *out,size32_t outSize,const unsigned char *in,size32_t inSize,size32_t *required);
+s32 httpUtilFormUrlDecode(unsigned char *out,size32_t size,const char *in,size32_t *required);
+s32 httpUtilBase64Encoder(char *out,const void *in,size32_t len);
+s32 httpUtilBase64Decoder(char *out,const void *in,size32_t len);
 
 /* copy */
-s32 httpUtilCopyUri(httpUri *dest,const httpUri *src,void *pool,size_t poolSize,size_t *required);
-s32 httpUtilCopyHeader(httpHeader *dest,const httpHeader *src,void *pool,size_t poolSize,size_t *required);
-s32 httpUtilCopyStatusLine(httpStatusLine *dest,const httpStatusLine *src,void *pool,size_t poolSize,size_t *required);
-s32 httpUtilMergeUriPath(httpUri *uri,const httpUri *src,const char *path,void *pool,size_t poolSize,size_t *required);
-s32 httpUtilAppendHeaderValue(httpHeader *dest,const httpHeader *src,const char *value,void *pool,size_t poolSize,size_t *required);
+s32 httpUtilCopyUri(httpUri *dest,const httpUri *src,void *pool,size32_t poolSize,size32_t *required);
+s32 httpUtilCopyHeader(httpHeader *dest,const httpHeader *src,void *pool,size32_t poolSize,size32_t *required);
+s32 httpUtilCopyStatusLine(httpStatusLine *dest,const httpStatusLine *src,void *pool,size32_t poolSize,size32_t *required);
+s32 httpUtilMergeUriPath(httpUri *uri,const httpUri *src,const char *path,void *pool,size32_t poolSize,size32_t *required);
+s32 httpUtilAppendHeaderValue(httpHeader *dest,const httpHeader *src,const char *value,void *pool,size32_t poolSize,size32_t *required);
 
 /* parse */
-s32 httpUtilParseUri(httpUri *uri,const char *str,void *pool,size_t size,size_t *required);
-s32 httpUtilParseUriPath(httpUriPath *path,const char *str,void *pool,size_t size,size_t *required);
-s32 httpUtilParseProxy(httpUri *uri,const char *str,void *pool,size_t size,size_t *required);
-s32 httpUtilParseStatusLine(httpStatusLine *resp,const char *str,size_t len,void *pool,size_t size,size_t *required,size_t *parsedLength);
-s32 httpUtilParseHeader(httpHeader *header,const char *str,size_t len,void *pool,size_t size,size_t *required,size_t *parsedLength);
+s32 httpUtilParseUri(httpUri *uri,const char *str,void *pool,size32_t size,size32_t *required);
+s32 httpUtilParseUriPath(httpUriPath *path,const char *str,void *pool,size32_t size,size32_t *required);
+s32 httpUtilParseProxy(httpUri *uri,const char *str,void *pool,size32_t size,size32_t *required);
+s32 httpUtilParseStatusLine(httpStatusLine *resp,const char *str,size32_t len,void *pool,size32_t size,size32_t *required,size32_t *parsedLength);
+s32 httpUtilParseHeader(httpHeader *header,const char *str,size32_t len,void *pool,size32_t size,size32_t *required,size32_t *parsedLength);
 
 
 #ifdef __cplusplus

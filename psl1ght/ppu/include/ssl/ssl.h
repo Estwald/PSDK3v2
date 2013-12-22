@@ -1,6 +1,8 @@
 #ifndef __SSL_H__
 #define __SSL_H__
 
+#undef size32_t
+#define size32_t s32
 
 #define SSL_CIPHER_UNKNOWN                         (-1)
 #define SSL_CIPHER_RSA_WITH_3DES_EDE_CBC_SHA       (0)
@@ -120,17 +122,17 @@ typedef void* sslCert;
 typedef void* sslCertName;
 
 
-int sslInit(void *pool, size_t poolSize);
+int sslInit(void *pool, size32_t poolSize);
 int sslEnd(void);
 
 /* SSL certificate loader */
-int sslCertificateLoader(uint64_t flag, char *buffer, size_t size, size_t *required);
+int sslCertificateLoader(uint64_t flag, char *buffer, size32_t size, size32_t *required);
 
 /* SSL certificate information get functions */
-int sslCertGetSerialNumber(const sslCert cert, const uint8_t **sboData, size_t *sboLength);
-int sslCertGetPublicKey(const sslCert cert, const uint8_t **sboData, size_t *sboLength);
-int sslCertGetRsaPublicKeyModulus(const sslCert cert, const uint8_t **sboData, size_t *sboLength);
-int sslCertGetRsaPublicKeyExponent(const sslCert cert, const uint8_t **sboData, size_t *sboLength);
+int sslCertGetSerialNumber(const sslCert cert, const uint8_t **sboData, size32_t *sboLength);
+int sslCertGetPublicKey(const sslCert cert, const uint8_t **sboData, size32_t *sboLength);
+int sslCertGetRsaPublicKeyModulus(const sslCert cert, const uint8_t **sboData, size32_t *sboLength);
+int sslCertGetRsaPublicKeyExponent(const sslCert cert, const uint8_t **sboData, size32_t *sboLength);
 
 //int sslCertGetNotBefore(const sslCert cert, CellRtcTick *begin);
 //int sslCertGetNotAfter(const sslCert cert, CellRtcTick *limit);
@@ -138,7 +140,7 @@ int sslCertGetSubjectName(const sslCert cert, const sslCertName *name);
 int sslCertGetIssuerName(const sslCert cert, const sslCertName *name);
 
 int sslCertGetNameEntryCount(const sslCert cert, uint32_t *entryCount);
-int sslCertGetNameEntryInfo(const sslCert cert, uint32_t entryNum, const char **oidName, const uint8_t **value, size_t *valueLength, int32_t flag);
+int sslCertGetNameEntryInfo(const sslCert cert, uint32_t entryNum, const char **oidName, const uint8_t **value, size32_t *valueLength, int32_t flag);
 int sslCertGetMd5Fingerprint(const sslCert cert, const uint8_t *buf, uint32_t *plen);
 
 
